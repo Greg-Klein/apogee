@@ -237,3 +237,9 @@ changement possible sans toucher à l'interface.
 Données : [Launch Library 2](https://ll.thespacedevs.com/) par [The Space Devs](https://thespacedevs.com).
 Reproduites telles que publiées. Ce tableau de bord n'effectue aucun suivi orbital et ne diffuse pas de
 télémétrie en direct.
+
+## Licence
+
+Code sous licence [MIT](LICENSE). Cette licence couvre le code de ce dépôt, pas les données qu'il affiche :
+les textes, images et écussons de mission servis par Launch Library 2 restent la propriété de leurs auteurs
+respectifs et de The Space Devs, sous leurs propres conditions.
