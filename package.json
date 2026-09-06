@@ -14,7 +14,8 @@
     "test:watch": "vitest",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "sync:since": "node scripts/fetch-raw.mjs --since"
+    "sync:since": "node scripts/fetch-raw.mjs --since",
+    "build:tools": "node scripts/build-tools.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
@@ -31,6 +32,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitest/coverage-v8": "^5.0.0",
+    "esbuild": "^0.28.2",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "tailwindcss": "^4",

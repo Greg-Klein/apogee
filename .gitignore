@@ -46,3 +46,6 @@ next-env.d.ts
 # Playwright / browser automation output
 /.playwright-mcp/
 /test-results/
+
+# Bundled data-pipeline tools: a build artefact of `npm run build:tools`.
+/dist/

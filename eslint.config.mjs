@@ -6,7 +6,7 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
 
-  globalIgnores(['.next/**', 'node_modules/**', 'data/**', 'next-env.d.ts']),
+  globalIgnores(['.next/**', 'node_modules/**', 'data/**', 'dist/**', 'next-env.d.ts']),
 
   {
     // The ingest script walks raw Launch Library JSON, whose `detailed` payload is

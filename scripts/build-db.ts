@@ -6,16 +6,19 @@
  * kept apart from outcome, recovery is recorded per physical article, and counters
  * are computed from the launches we actually hold rather than copied from the source.
  */
-import { readFileSync, readdirSync, existsSync, mkdirSync, rmSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, mkdirSync, renameSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import Database from 'better-sqlite3';
 import { resolvePrecision } from '../src/lib/domain/precision';
 import { phaseOf, outcomeOf, recoveryOf } from '../src/lib/domain/status';
 import type { LL2Launch, LL2LauncherStage, LL2Paginated, LL2SpacecraftStage } from '../src/lib/ll2/types';
 
-const RAW = path.resolve('data/raw');
-const DB_PATH = path.resolve('data/spacex.db');
-const SCHEMA = path.resolve('src/lib/db/schema.sql');
+const RAW = process.env.SPACEX_RAW_PATH ?? path.resolve('data/raw');
+const DB_PATH = process.env.SPACEX_DB_PATH ?? path.resolve('data/spacex.db');
+const SCHEMA = process.env.SPACEX_SCHEMA_PATH ?? path.resolve('src/lib/db/schema.sql');
+// Built beside the target, then renamed over it. A running server keeps serving the
+// previous file until the swap lands, and never sees a half-written database.
+const BUILD_PATH = `${DB_PATH}.building`;
 
 function readPages<T>(prefix: string): T[] {
   if (!existsSync(RAW)) return [];
@@ -89,9 +92,9 @@ console.log(
 );
 
 mkdirSync(path.dirname(DB_PATH), { recursive: true });
-for (const suffix of ['', '-wal', '-shm']) rmSync(`${DB_PATH}${suffix}`, { force: true });
+for (const suffix of ['', '-wal', '-shm']) rmSync(`${BUILD_PATH}${suffix}`, { force: true });
 
-const db = new Database(DB_PATH);
+const db = new Database(BUILD_PATH);
 db.exec(readFileSync(SCHEMA, 'utf8'));
 
 const ins = {
@@ -796,6 +799,8 @@ ins.meta.run('built_at', new Date().toISOString());
 ins.meta.run('source_last_updated', sourceUpdated?.m ?? '');
 ins.meta.run('launch_count', String(launches.length));
 
+// Fold the write-ahead log back in so the published file is self-contained.
+db.pragma('wal_checkpoint(TRUNCATE)');
 db.exec('PRAGMA optimize');
 const counts = db
   .prepare(
@@ -811,5 +816,12 @@ const counts = db
 `,
   )
   .get();
-console.log('built data/spacex.db', counts);
 db.close();
+
+// Atomic swap. The old file stays readable until this instant; the app notices the
+// new inode on its next check and reopens.
+for (const suffix of ['-wal', '-shm']) rmSync(`${BUILD_PATH}${suffix}`, { force: true });
+renameSync(BUILD_PATH, DB_PATH);
+for (const suffix of ['-wal', '-shm']) rmSync(`${DB_PATH}${suffix}`, { force: true });
+
+console.log(`built ${DB_PATH}`, counts);

@@ -158,6 +158,80 @@ l'UTC reste accessible au survol. Aucun compte, aucune donnée envoyée nulle pa
 
 ---
 
+## Déploiement
+
+L'image Docker est autonome : serveur Next en sortie `standalone`, plus les deux
+outils du pipeline de données pré-bundlés en JavaScript simple, donc ni TypeScript ni
+dépendances de développement au runtime.
+
+```bash
+docker build --build-arg NEXT_PUBLIC_SITE_URL=https://apogee.gregoryklein.io -t apogee .
+docker run -p 3000:3000 -v apogee-data:/app/data apogee
+```
+
+### Coolify
+
+1. **Build Pack** : Dockerfile.
+2. **Variable de build** : `NEXT_PUBLIC_SITE_URL=https://apogee.gregoryklein.io`. Elle doit être
+   marquée « Build Variable » : les `NEXT_PUBLIC_*` sont inlinées à la compilation, pas
+   lues au démarrage. Sans elle, le sitemap annoncerait des URLs `localhost`.
+3. **Volume persistant** : `/app/data`. Sans ce volume, l'instantané disparaît à chaque
+   redéploiement.
+4. **Port** : 3000.
+
+### Amorçage du premier déploiement
+
+`data/` n'est pas versionné. Au premier démarrage l'application répond correctement mais
+affiche « source indisponible », ce qui est le comportement voulu : aucune donnée de
+démonstration ne se substitue à une source absente.
+
+Deux façons de remplir le volume, au choix.
+
+**Depuis le conteneur**, si tu peux attendre le quota horaire :
+
+```bash
+node dist/tools/fetch-raw.mjs && node dist/tools/build-db.mjs
+```
+
+**Depuis ta machine**, immédiat : construis la base en local (`npm run data`) puis copie
+les 8 Mo dans le volume.
+
+```bash
+docker cp data/spacex.db <conteneur>:/app/data/spacex.db
+```
+
+### Mise à jour de la base
+
+L'instantané ne se met pas à jour tout seul. Une tâche planifiée Coolify, quotidienne
+par exemple, suffit :
+
+```bash
+node dist/tools/fetch-raw.mjs --since && node dist/tools/build-db.mjs
+```
+
+`--since` ne demande à la source que les missions modifiées depuis la dernière
+synchronisation réussie, ce qui coûte en général **une seule requête** et reste très
+loin du plafond horaire. Un report de lancement arrive par ce canal : la mission garde
+son identité et son URL, seule sa date change.
+
+Le remplacement du fichier est **atomique et à chaud**. `build-db` écrit dans
+`spacex.db.building` puis le renomme par-dessus la cible ; le serveur continue de servir
+l'ancien fichier jusqu'à la bascule, détecte le nouvel inode au contrôle suivant et
+rouvre sa connexion. Aucun redémarrage, aucune requête servie sur une base à moitié
+écrite.
+
+La date de dernière synchronisation réussie est affichée en pied de page, distincte de
+la date de dernière modification côté source.
+
+### Une seule instance
+
+L'application lit un fichier SQLite local : elle se déploie en instance unique. Le
+profil d'usage s'y prête, lecture seule et un seul écrivain, mais plusieurs replicas
+demanderaient une base partagée. La couche `src/lib/db/` est isolée pour rendre ce
+changement possible sans toucher à l'interface.
+
+---
+
 ## Source
 
 Données : [Launch Library 2](https://ll.thespacedevs.com/) par [The Space Devs](https://thespacedevs.com).
