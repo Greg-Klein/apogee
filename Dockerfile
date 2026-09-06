@@ -56,10 +56,15 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
-# Runtime-only dependency tree. better-sqlite3 is external to the Next bundle and
-# is also what the ingest tool loads, so it has to exist as a real module here.
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+# Reuses the node_modules already resolved in `deps` rather than running a second,
+# independent `npm ci` here. better-sqlite3 has no prebuilt binary for every
+# Node/platform combination and falls back to compiling from source via node-gyp,
+# which needs Python and a compiler; `deps` has that toolchain, this stage
+# deliberately does not. Pruning only removes files already on disk, so no compiler
+# is needed here even when a fresh install would have had to build from source.
+COPY --from=builder /app/package.json /app/package-lock.json ./
+COPY --from=builder /app/node_modules ./node_modules
+RUN npm prune --omit=dev && npm cache clean --force
 
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./

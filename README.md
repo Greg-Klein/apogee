@@ -160,24 +160,21 @@ l'UTC reste accessible au survol. Aucun compte, aucune donnée envoyée nulle pa
 
 ## Déploiement
 
-L'image Docker est autonome : serveur Next en sortie `standalone`, plus les deux
-outils du pipeline de données pré-bundlés en JavaScript simple, donc ni TypeScript ni
-dépendances de développement au runtime.
+Le Dockerfile produit une image autonome : serveur Next en sortie `standalone`, plus
+les deux outils du pipeline de données pré-bundlés en JavaScript simple sous
+`dist/tools/`, donc ni TypeScript ni dépendances de développement au runtime.
 
 ```bash
 docker build --build-arg NEXT_PUBLIC_SITE_URL=https://apogee.gregoryklein.io -t apogee .
 docker run -p 3000:3000 -v apogee-data:/app/data apogee
 ```
 
-### Coolify
+`NEXT_PUBLIC_SITE_URL` doit être fournie **au build**, pas seulement au runtime : les
+variables `NEXT_PUBLIC_*` sont inlinées à la compilation. Sans elle, le sitemap et les
+métadonnées Open Graph annonceraient `localhost`.
 
-1. **Build Pack** : Dockerfile.
-2. **Variable de build** : `NEXT_PUBLIC_SITE_URL=https://apogee.gregoryklein.io`. Elle doit être
-   marquée « Build Variable » : les `NEXT_PUBLIC_*` sont inlinées à la compilation, pas
-   lues au démarrage. Sans elle, le sitemap annoncerait des URLs `localhost`.
-3. **Volume persistant** : `/app/data`. Sans ce volume, l'instantané disparaît à chaque
-   redéploiement.
-4. **Port** : 3000.
+Le volume `/app/data` doit être monté sur un stockage persistant. Sans lui, l'instantané
+disparaît à chaque reconstruction de l'image.
 
 ### Amorçage du premier déploiement
 
@@ -185,16 +182,14 @@ docker run -p 3000:3000 -v apogee-data:/app/data apogee
 affiche « source indisponible », ce qui est le comportement voulu : aucune donnée de
 démonstration ne se substitue à une source absente.
 
-Deux façons de remplir le volume, au choix.
-
-**Depuis le conteneur**, si tu peux attendre le quota horaire :
+**Depuis le conteneur**, si l'on peut attendre le quota horaire :
 
 ```bash
 node dist/tools/fetch-raw.mjs && node dist/tools/build-db.mjs
 ```
 
-**Depuis ta machine**, immédiat : construis la base en local (`npm run data`) puis copie
-les 8 Mo dans le volume.
+**Depuis une machine locale**, immédiat : construire la base en local (`npm run data`)
+puis copier les 8 Mo dans le volume.
 
 ```bash
 docker cp data/spacex.db <conteneur>:/app/data/spacex.db
@@ -202,8 +197,9 @@ docker cp data/spacex.db <conteneur>:/app/data/spacex.db
 
 ### Mise à jour de la base
 
-L'instantané ne se met pas à jour tout seul. Une tâche planifiée Coolify, quotidienne
-par exemple, suffit :
+L'instantané ne se met pas à jour tout seul. Une tâche planifiée quotidienne, par
+exemple via cron dans le conteneur ou l'ordonnanceur de la plateforme d'hébergement,
+suffit :
 
 ```bash
 node dist/tools/fetch-raw.mjs --since && node dist/tools/build-db.mjs
