@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Apogée">
+  <rect x="0" y="0" width="32" height="32" rx="7" fill="#07080c" />
+  <ellipse cx="16" cy="19" rx="10" ry="6" fill="none" stroke="#2c5ea8" stroke-width="1.6" />
+  <circle cx="16" cy="13" r="2.4" fill="#4d8ff0" />
+</svg>

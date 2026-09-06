@@ -1,0 +1,207 @@
+@import 'tailwindcss';
+
+/*
+  Palette: a cool near-black ground with one accent (ion blue) plus three
+  strictly functional status hues. Status is never carried by colour alone;
+  every badge pairs its hue with a glyph and a label.
+*/
+@theme {
+  --color-ground: #07080c;
+  --color-ground-2: #0b0d13;
+  --color-surface: #10131b;
+  --color-surface-2: #161a24;
+  --color-hairline: #1e2331;
+  --color-hairline-2: #2a3143;
+
+  --color-ink: #e8ecf5;
+  --color-ink-2: #a3abbd;
+  --color-ink-3: #6c7488;
+  --color-ink-4: #464d5e;
+
+  --color-ion: #4d8ff0;
+  --color-ion-dim: #2c5ea8;
+  --color-ion-wash: #101a2c;
+
+  --color-go: #3ec98a;
+  --color-warn: #e0a63c;
+  --color-fail: #e3606a;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, 'SF Mono', monospace;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root {
+  color-scheme: dark;
+  --shell-pad: clamp(1rem, 3vw, 2.5rem);
+}
+
+html {
+  background: var(--color-ground);
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-ground);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: 'cv11', 'ss01';
+  overflow-x: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Focus ring: one definition, visible on every interactive surface. */
+:where(a, button, input, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-ion);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--color-ion-dim);
+  color: #fff;
+}
+
+/* Scrollbars tuned to the ground so panes do not flash white. */
+* {
+  scrollbar-color: var(--color-hairline-2) transparent;
+  scrollbar-width: thin;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-hairline-2);
+  border-radius: 999px;
+  border: 3px solid var(--color-ground);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #38415a;
+}
+
+/* --- motion primitives ---------------------------------------------------
+   Cascade reveals are driven by a CSS custom property so lists can stagger
+   without mounting a JS animation per row. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: rise 0.55s var(--ease-out-expo) both;
+  animation-delay: calc(var(--i, 0) * 42ms);
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translate3d(200%, 0, 0);
+  }
+}
+.shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translate3d(-100%, 0, 0);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.05), transparent);
+  animation: shimmer 1.6s infinite;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+.breathe {
+  animation: breathe 2.4s var(--ease-out-expo) infinite;
+}
+
+@keyframes drift {
+  from {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  to {
+    transform: translate3d(0, 0, 0) rotate(360deg);
+  }
+}
+
+@keyframes sweep {
+  0% {
+    opacity: 0;
+    transform: translate3d(-30%, 0, 0);
+  }
+  35% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(130%, 0, 0);
+  }
+}
+
+/* Hairline grid used behind hero panels. Fixed and inert: never repainted on scroll. */
+.grid-veil {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.028) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.028) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Pointer-tracked spotlight border. Coordinates come from a CSS variable set on
+   pointermove, so hover highlighting costs no React re-render. */
+.spot {
+  position: relative;
+  isolation: isolate;
+}
+.spot::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: radial-gradient(
+    220px circle at var(--mx, 50%) var(--my, 0%),
+    rgb(77 143 240 / 0.55),
+    transparent 70%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.35s var(--ease-out-expo);
+  pointer-events: none;
+  z-index: 1;
+}
+.spot:hover::before,
+.spot:focus-within::before {
+  opacity: 1;
+}
