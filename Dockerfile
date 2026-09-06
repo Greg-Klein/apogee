@@ -17,7 +17,7 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./
-RUN npm ci --legacy-peer-deps
+RUN npm ci
 
 # ---------------------------------------------------------------------------
 # builder: Next standalone output plus the bundled data-pipeline tools
@@ -59,7 +59,7 @@ RUN apt-get update \
 # Runtime-only dependency tree. better-sqlite3 is external to the Next bundle and
 # is also what the ingest tool loads, so it has to exist as a real module here.
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --legacy-peer-deps && npm cache clean --force
+RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
