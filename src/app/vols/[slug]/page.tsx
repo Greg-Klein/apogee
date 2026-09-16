@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
 import { Countdown } from '@/components/launch/countdown';
+import { ShareFlight } from '@/components/launch/share-flight';
 import { FlightTimeline } from '@/components/launch/flight-timeline';
 import { HardwareBlock } from '@/components/launch/hardware-block';
 import { PayloadBlock } from '@/components/launch/payload-block';
@@ -21,6 +22,7 @@ import { getDb } from '@/lib/db/client';
 import { getLaunchBySlug, getLaunchDetail, getRelatedLaunches } from '@/lib/db/launches';
 import { PRECISION_NOTE, formatDuration, formatTimestamp } from '@/lib/domain/format';
 import { isInstant, type PrecisionKind } from '@/lib/domain/precision';
+import { buildMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,12 +31,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const launch = getLaunchBySlug(slug);
   if (!launch) return { title: 'Vol introuvable' };
-  return {
+  return buildMetadata({
     title: launch.mission_name ?? launch.name,
+    path: `/vols/${encodeURIComponent(launch.slug)}`,
     description:
       launch.mission_description?.slice(0, 180) ??
       `${launch.name} · ${launch.config_full_name ?? ''} depuis ${launch.pad_name ?? 'un site non renseigné'}.`,
-  };
+  });
 }
 
 export default async function FlightPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -141,6 +144,11 @@ export default async function FlightPage({ params }: { params: Promise<{ slug: s
               ) : null}
 
               <div className="flex flex-wrap items-center gap-3 pt-1">
+                <ShareFlight
+                  key={launch.slug}
+                  path={`/vols/${encodeURIComponent(launch.slug)}`}
+                  title={launch.mission_name ?? launch.name}
+                />
                 {webcast ? <WebcastButton video={webcast} /> : null}
                 {officialLink ? (
                   <a
