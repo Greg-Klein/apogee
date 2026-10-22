@@ -2,7 +2,7 @@
 
 # Debian slim rather than Alpine: better-sqlite3 ships glibc prebuilds, so the
 # native addon installs without a compiler toolchain in the final image.
-ARG NODE_VERSION=24-slim
+ARG NODE_VERSION=24.22.1-bookworm-slim
 
 # ---------------------------------------------------------------------------
 # deps: full install, including the dev dependencies the build needs
